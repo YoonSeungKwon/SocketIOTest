@@ -11,9 +11,11 @@ const keys = {
     KeyW:false,
     KeyS:false,
 }
-const socket = io('http://localhost:3000',{
-        cors: { origin: '*' }
-      })
+const socket = io('http://localhost:3000', {
+    cors:{
+        origin:'*',
+    }
+});
 var cube;
 
 init();
