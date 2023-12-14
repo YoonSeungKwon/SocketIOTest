@@ -1,85 +1,36 @@
-import express from 'express'
-import http from 'http'
-import { Socket, Server } from 'socket.io'
+const express = require('express');
+const { WebSocketServer } = require('ws');
+const http = require('http');
 
-const port:number = 3000
+// Express 애플리케이션과 HTTP 서버 생성
+const app = express();
+const server = http.createServer(app);
 
+// WebSocket 서버 생성
+const wss = new WebSocketServer({ server });
 
-class App{
+// 클라이언트 연결 관리
+wss.on('connection', (ws) => {
+    console.log('클라이언트가 연결되었습니다.');
 
-    private member:number = 0
-    private port: number       
-    private server: http.Server
-    private io: Server
-    private clients:any = {}        //Saving clients {Runtime, Position, Rotation}
+    // 서버에서 클라이언트로 메시지 전송
+    ws.on('message', (message) => {
+        console.log('받은 메시지:', message);
+        if (message === '1' || message === '0') {
+            // 모든 연결된 클라이언트에게 메시지 전송
+            wss.clients.forEach((client) => {
+                client.send(message);
+            });
+        }
+    });
+});
 
-    //Constructor
-    constructor(port:number){
+// Express 라우트
+app.get('/', (req, res) => {
+    res.send('WebSocket 서버 예시');
+});
 
-        //Port
-        this.port = port
-        const app = express() 
-        this.server = new http.Server(app)
-
-        //CORS Policy
-        this.io = new Server(this.server, {
-            cors: {
-              origin: "*",
-              methods: ["GET", "POST"]
-            }
-          })
-        
-
-        //Socket.IO on Connection
-        this.io.on('connection', (socket:Socket) => {
-            this.clients[socket.id] = {}
-            console.log(this.clients)
-            this.member += 1
-            console.log('User Connected: ' + socket.id)
-            console.log('Current Members: ' + this.member)
-
-            //Send Socket ID
-            socket.emit('id', socket.id)
-
-            //Socket Disconnected
-            socket.on('disconnect', () => {
-                this.member -= 1
-                console.log('User Disconnected: ' + socket.id)
-                console.log('Current Members: ' + this.member) 
-                if(this.clients && this.clients[socket.id]){
-                    console.log('deleting'+socket.id)
-                    delete this.clients[socket.id]
-                    this.io.emit('removeClient', socket.id)
-                }
-            })
-            
-            //Saving Data Interval
-            socket.on('update', (message)=>{
-                if(this.clients[socket.id]){
-                    this.clients[socket.id].t = message.t
-                    this.clients[socket.id].p = message.p
-                    this.clients[socket.id].r = message.r
-                }
-            })
-
-        })
-
-        //Send Data to Client
-        setInterval(()=>{
-            this.io.emit('clients', this.clients)
-        }, 10)
-
-    }
-    
-    //Server Start Method
-    public Start(){
-        this.server.listen(this.port, ()=>{
-            console.log("Server is Listening Port:" + this.port )
-        })
-    }
-}
-
-//Server Start
-new App(port).Start()
-
-
+// 서버 시작
+server.listen(8080, () => {
+    console.log('서버가 8080포트에서 시작되었습니다.');
+});
