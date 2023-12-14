@@ -16,11 +16,10 @@ wss.on('connection', (ws) => {
     // 서버에서 클라이언트로 메시지 전송
     ws.on('message', (message) => {
         console.log('받은 메시지:', message);
-        if (message === '1' || message === '0') {
             // 모든 연결된 클라이언트에게 메시지 전송
-            wss.clients.forEach((client) => {
-                client.send(message);
-            });
+        wss.clients.forEach((client) => {
+            client.send(message);
+        });
         }
     });
 });
